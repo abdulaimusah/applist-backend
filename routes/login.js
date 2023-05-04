@@ -14,7 +14,6 @@ const connectToDatabase = (req, res, next) => {
       user: process.env.USER,
       password: process.env.PASSWORD,
       database: process.env.DATABASE,
-      port: process.env.PORT
     });
   
     db.connect((err) => {
