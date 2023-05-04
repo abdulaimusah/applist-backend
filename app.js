@@ -14,6 +14,7 @@ var adduserRouter = require('./routes/adduser');
 
 var app = express();
 
+// view engine setup
 
 
 app.use(cors());
