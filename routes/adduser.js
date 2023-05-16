@@ -80,14 +80,15 @@ router.post("/", checkAuth, async (req, res) => {
                 res.status(500).json({ error: "Internal Server Error" });
               } else {
                 // Generate a JWT token for the new user and return it in the response
+                /*
                 const token = jwt.sign(
                   {
                     email: email,
                   },
                   process.env.JWT_SECRET,
-                  { expiresIn: "10h" }
-                );
-                res.status(200).json({ _msg: "User added", data: token });
+                  { expiresIn: "10h" } 
+                ); */
+                res.status(200).json({ _msg: "User added", data: name });
               }
             }
           );

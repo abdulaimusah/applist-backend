@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
   
       // Create JWT token
       const token = jwt.sign({ email: email },
-         process.env.JWT_SECRET, );
+         process.env.JWT_SECRET, { expiresIn: "24h" } );
   
       // Respond with token
       res.status(200).json({ 
