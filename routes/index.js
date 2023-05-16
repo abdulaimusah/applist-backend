@@ -153,7 +153,7 @@ router.delete('/:id', checkAuth, (req, res) => {
       console.log('Error deleting data:', err.message);
       res.status(500).json({ error: 'Internal Server Error' });
     } else {
-      res.send({
+      res.status(200).json({
         _msg: "Data deleted successfuly"
       });
     }

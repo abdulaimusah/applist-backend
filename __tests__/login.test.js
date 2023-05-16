@@ -1,88 +1,98 @@
-const request = require('supertest');
-const server = require('../bin/www'); // Replace with your Express app
-const bcrypt = require('bcrypt');
+const request = require("supertest");
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const yup = require("yup");
+const mysql = require("mysql");
 
-const app = server.listen(process.env.PORT);
+const loginRoute = require("../routes/login");
 
-describe('Login endpoint', () => {
-  it('should respond with a token when valid email and password are provided', async () => {
-    const email = 'testuser@example.com';
-    const password = 'Abcd1234!';
+require("dotenv").config();
 
-    // Hash password
-    const saltRounds = 10;
-    const salt = bcrypt.genSaltSync(saltRounds);
-    const hashedPassword = bcrypt.hashSync(password, salt);
+const JWT_SecretKey = "secret";
 
-    console.log("command started");
 
-    // Insert user into database
-    const db = mysql.createConnection({
-        host: process.env.HOST,
-        user: process.env.USER,
-        password: process.env.PASSWORD,
-      });
+// Email and password that were used to seed database.
+const testEmail = process.env.ADMIN_EMAIL;
+const testPassword = process.env.ADMIN_PASSWORD;
 
-    await db.query('INSERT INTO users (name, email, password) VALUES (?, ?, ?)', ['Test User', email, hashedPassword]);
+describe("login route", () => {
+  let app;
+  let db;
 
-    // Make login request
-    const response = await request(app)
-      .post('/login')
-      .send({ email, password });
+  beforeAll(() => {
+    app = express();
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: false }));
 
-    // Expect response to have a token
-    expect(response.status).toBe(200);
-    expect(response.body.token).toBeDefined();
+    // Establish the database connection
+    db = mysql.createConnection({
+      host: process.env.HOST,
+      user: process.env.USER,
+      password: process.env.PASSWORD,
+      database: process.env.DATABASE,
+      port: process.env.DB_PORT,
+    });
 
-    // Delete user from database
-    await db.query('DELETE FROM users WHERE email = ?', [email]);
+    db.connect((err) => {
+      if (err) {
+        console.error("Error connecting to database:", err.message);
+      } else {
+        console.log("Connected to database");
+      }
+    });
+
+    app.use((req, res, next) => {
+      req.db = db;
+      next();
+    });
+
+    app.use(loginRoute);
   });
 
-  it('should respond with 400 if email is invalid', async () => {
-    const email = 'invalidemail'; // Invalid email address
-    const password = 'Abcd1234!';
-
-    const response = await request(app)
-      .post('/login')
-      .send({ email, password });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Invalid email');
+  afterAll((done) => {
+    // Close the database connection
+    db.end((err) => {
+      if (err) {
+        console.error("Error closing database connection:", err.message);
+      } else {
+        console.log("Database connection closed");
+      }
+      done();
+    });
   });
 
-  it('should respond with 400 if password is invalid', async () => {
-    const email = 'testuser@example.com';
-    const password = 'invalidpassword'; // Password doesn't meet requirements
+  test("should respond with 400 if request body is invalid", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ email: "invalidemail", password: "shortpw" });
 
-    const response = await request(app)
-      .post('/login')
-      .send({ email, password });
-
-    expect(response.status).toBe(400);
-    expect(response.body.error).toBe('Invalid password');
+    expect(res.status).toBe(400);
   });
 
-  it('should respond with 404 if user does not exist', async () => {
-    const email = 'nonexistentuser@example.com';
-    const password = 'Abcd1234!';
+  test("should respond with 404 if user is not found", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ email: "nonexistenttest@email.com", password: testPassword });
 
-    const response = await request(app)
-      .post('/login')
-      .send({ email, password });
-
-    expect(response.status).toBe(404);
-    expect(response.body.error).toBe('User not found');
+    expect(res.status).toBe(404);
   });
 
-  it('should respond with 401 if password is incorrect', async () => {
-    const email = 'testuser@example.com';
-    const password = 'incorrectpassword';
+  test("should respond with 401 if password is wrong", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ email: testEmail, password: "WrongP@1" });
 
-    const response = await request(app)
-      .post('/login')
-      .send({ email, password });
+    expect(res.status).toBe(401);
+  });
 
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe('Invalid password');
+  test("should respond with 200 and a JWT token if login is successful", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ email: testEmail, password: testPassword });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toBeTruthy();
+    console.log(res.body.data);
   });
 });

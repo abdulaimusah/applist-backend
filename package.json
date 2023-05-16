@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "yarn && node ./bin/www",
-    "seed": "node ./seed.js"
+    "seed": "node ./seed.js",
+    "test": "jest"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -12,7 +13,7 @@
     "cors": "^2.8.5",
     "debug": "~2.6.9",
     "dotenv": "^16.0.3",
-    "express": "~4.16.1",
+    "express": "^4.16.4",
     "http-errors": "1.6.3",
     "jsonwebtoken": "^9.0.0",
     "morgan": "~1.9.1",
